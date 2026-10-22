@@ -1,5 +1,5 @@
 import { useState, useEffect, type FC, type ChangeEvent } from "react";
-import { Plus, FileSpreadsheet, Users, ShieldCheck, Download, Upload, CheckCircle2, Sparkles, Trash2 } from "lucide-react";
+import { Plus, FileSpreadsheet, Users, ShieldCheck, Download, Upload, CheckCircle2 } from "lucide-react";
 import { KpiOverviewCards } from "./KpiOverviewCards";
 import { DocumentRegistry } from "./DocumentRegistry";
 import { ClientDirectory } from "./ClientDirectory";
@@ -11,13 +11,8 @@ import {
   restoreDocumentFromTrash,
   duplicateDocumentInRepository,
   updateDocumentStatusInRepository,
-  seedSampleContractorDocumentsIfEmpty,
   downloadVaultBackupFile,
   importVaultSnapshot,
-  hasDemoDocumentsInRepository,
-  purgeDemoDocumentsFromRepository,
-  forceSeedSampleContractorDocuments,
-  setSampleDataLifecycleStatus,
   convertEstimateToInvoiceInRepository,
 } from "@/services/indexeddb-repository";
 import type {
@@ -66,7 +61,6 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({
   });
   const [clientSearchQuery, setClientSearchQuery] = useState<string>("");
   const [backupNotification, setBackupNotification] = useState<string | null>(null);
-  const [hasDemoDocuments, setHasDemoDocuments] = useState<boolean>(false);
 
   const [documentSummaries, setDocumentSummaries] = useState<DocumentSummaryRecord[]>([]);
   const [clientRecords, setClientRecords] = useState<ClientDirectoryRecord[]>([]);
@@ -82,20 +76,15 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({
 
   const refreshDashboardData = async () => {
     try {
-      // Seed initial sample documents if clean
-      await seedSampleContractorDocumentsIfEmpty();
-
-      const [loadedSummaries, loadedClients, loadedKpis, demoStatus] = await Promise.all([
+      const [loadedSummaries, loadedClients, loadedKpis] = await Promise.all([
         listDocumentSummaries(filterCriteria),
         listClientsFromRepository(clientSearchQuery),
         calculateDashboardKpiMetrics(),
-        hasDemoDocumentsInRepository(),
       ]);
 
       setDocumentSummaries(loadedSummaries);
       setClientRecords(loadedClients);
       setKpiMetrics(loadedKpis);
-      setHasDemoDocuments(demoStatus);
     } catch (loadError) {
       console.warn("Unable to load repository documents:", loadError);
     } finally {
@@ -176,66 +165,11 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({
     }
   };
 
-  const handlePurgeSampleData = async () => {
-    const purgedCount = await purgeDemoDocumentsFromRepository();
-    setBackupNotification(
-      `Cleared ${purgedCount} sample demo documents. TrueSquare Studio is now in a pristine, clean state.`
-    );
-    await refreshDashboardData();
-    setTimeout(() => setBackupNotification(null), 5000);
-  };
-
-  const handleDismissSampleBanner = () => {
-    setSampleDataLifecycleStatus("retained");
-    setHasDemoDocuments(false);
-  };
-
-  const handleRestoreSampleDocuments = async () => {
-    await forceSeedSampleContractorDocuments();
-    setBackupNotification("Restored 3 sample demo documents for exploration.");
-    await refreshDashboardData();
-    setTimeout(() => setBackupNotification(null), 5000);
-  };
-
   return (
     <div
       className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full"
       style={{ paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom, 0px))" }}
     >
-      {/* Sample Demo Workspace Banner */}
-      {hasDemoDocuments && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-500 text-xs animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-6 h-6 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            </div>
-            <div>
-              <span className="font-bold text-amber-500">Sample Demo Workspace Active</span>
-              <span className="text-zinc-400 dark:text-zinc-400 ml-1.5 hidden sm:inline">
-                (3 preloaded sample records for Miller Renovations &amp; Vance Residence).
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2 shrink-0 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={handlePurgeSampleData}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center space-x-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold transition-all shadow-2xs active:scale-[0.98]"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear Sample Data &amp; Start Fresh</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDismissSampleBanner}
-              className="px-2.5 py-1.5 rounded-xl hover:bg-amber-500/15 text-amber-500/80 hover:text-amber-500 font-semibold transition-colors"
-            >
-              Keep Demos
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Backup Notification Toast */}
       {backupNotification && (
         <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-semibold animate-in fade-in slide-in-from-top duration-200">
@@ -371,7 +305,6 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({
             onSoftDeleteDocument={handleSoftDelete}
             onRestoreDocument={handleRestore}
             onCreateNewDocument={onCreateNewDocument}
-            onRestoreSampleDocuments={handleRestoreSampleDocuments}
             onConvertEstimateToInvoice={handleConvertEstimateToInvoice}
             isLoading={isLoading}
           />

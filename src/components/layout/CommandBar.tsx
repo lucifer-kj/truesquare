@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, type FC } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   HardHat,
-  Printer,
   Search,
   ArrowLeft,
   LayoutDashboard,
@@ -12,6 +11,7 @@ import {
   FileText,
   Sparkles,
   Download,
+  LogOut,
 } from "lucide-react";
 import type { DocumentClassificationType } from "@/domain/types";
 import { downloadVaultBackupFile } from "@/services/indexeddb-repository";
@@ -33,6 +33,8 @@ export interface CommandBarProps {
   onUpdateDocumentType?: (documentType: DocumentClassificationType) => void;
   onTriggerExportPdf: () => void;
   onOpenCommandPalette?: () => void;
+  userProfile?: { name: string; email: string; isGuest?: boolean } | null;
+  onSignOut?: () => void;
 }
 
 export const CommandBar: FC<CommandBarProps> = ({
@@ -49,6 +51,8 @@ export const CommandBar: FC<CommandBarProps> = ({
   onUpdateDocumentType,
   onTriggerExportPdf,
   onOpenCommandPalette,
+  userProfile,
+  onSignOut,
 }) => {
   const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState<boolean>(false);
   const actionsDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -319,17 +323,46 @@ export const CommandBar: FC<CommandBarProps> = ({
           </Tooltip>
         )}
 
-        {/* Primary Export PDF Button (Shown in Editor) */}
+        {/* User Profile Pill & Sign Out */}
+        {userProfile && (
+          <div className="flex items-center space-x-1.5 pl-2 border-l border-border">
+            <div className="flex items-center space-x-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg border border-border/50">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="font-semibold text-foreground max-w-[110px] truncate" title={userProfile.email}>
+                {userProfile.name}
+              </span>
+              {userProfile.isGuest && (
+                <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1 py-0.2 rounded font-mono font-bold">
+                  OFFLINE
+                </span>
+              )}
+            </div>
+            {onSignOut && (
+              <Tooltip content="Sign Out" position="bottom">
+                <button
+                  type="button"
+                  onClick={onSignOut}
+                  className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                  aria-label="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
+            )}
+          </div>
+        )}
+
+        {/* Primary Download PDF Button (Shown in Editor) */}
         {activeView === "editor" && (
-          <Tooltip content="Generate single-page vector PDF" shortcut="Alt+P" position="bottom">
+          <Tooltip content="Direct automatic PDF file download" shortcut="Alt+P" position="bottom">
             <button
               type="button"
               onClick={onTriggerExportPdf}
               className="flex items-center space-x-1.5 px-3.5 py-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition-all shadow-xs active:scale-95"
-              aria-label="Print or Save PDF Document"
+              aria-label="Direct Download PDF Document"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Export PDF</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>Download PDF</span>
               <span className="hidden md:inline text-[10px] opacity-75 font-mono">Alt+P</span>
             </button>
           </Tooltip>

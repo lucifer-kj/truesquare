@@ -2,7 +2,7 @@ import { type FC } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
-  Printer,
+  Download,
   Copy,
   Trash2,
   RotateCcw,
@@ -11,7 +11,6 @@ import {
   CheckCircle,
   ExternalLink,
   Plus,
-  Sparkles,
   FileCheck2,
 } from "lucide-react";
 import { formatCents } from "@/domain/money";
@@ -38,7 +37,6 @@ export interface DocumentRegistryProps {
   onSoftDeleteDocument: (documentIdentifier: string) => void;
   onRestoreDocument: (documentIdentifier: string) => void;
   onCreateNewDocument: (documentType: "estimate" | "invoice") => void;
-  onRestoreSampleDocuments?: () => void;
   onConvertEstimateToInvoice?: (documentIdentifier: string) => void;
   isLoading?: boolean;
 }
@@ -54,7 +52,6 @@ export const DocumentRegistry: FC<DocumentRegistryProps> = ({
   onSoftDeleteDocument,
   onRestoreDocument,
   onCreateNewDocument,
-  onRestoreSampleDocuments,
   onConvertEstimateToInvoice,
   isLoading = false,
 }) => {
@@ -190,20 +187,6 @@ export const DocumentRegistry: FC<DocumentRegistryProps> = ({
               </button>
             </div>
           )}
-
-          {!isTrashViewActive && onRestoreSampleDocuments && (
-            <div className="pt-2 border-t border-border/40 mt-3 max-w-xs mx-auto">
-              <button
-                type="button"
-                onClick={onRestoreSampleDocuments}
-                className="inline-flex items-center space-x-1.5 text-xs text-muted-foreground hover:text-amber-500 font-medium transition-colors"
-                title="Populate realistic sample estimates and invoices for testing"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Load Sample Demo Documents</span>
-              </button>
-            </div>
-          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -293,9 +276,9 @@ export const DocumentRegistry: FC<DocumentRegistryProps> = ({
                               type="button"
                               onClick={() => onExportPdfDirect(documentSummary.id)}
                               className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
-                              title="Export PDF"
+                              title="Download PDF"
                             >
-                              <Printer className="w-3.5 h-3.5" />
+                              <Download className="w-3.5 h-3.5" />
                             </button>
 
                             <button
@@ -459,9 +442,9 @@ export const DocumentRegistry: FC<DocumentRegistryProps> = ({
                                 type="button"
                                 onClick={() => onExportPdfDirect(documentSummary.id)}
                                 className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                                title="Export PDF"
+                                title="Download PDF"
                               >
-                                <Printer className="w-3.5 h-3.5" />
+                                <Download className="w-3.5 h-3.5" />
                               </button>
 
                               <button

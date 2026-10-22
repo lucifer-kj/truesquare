@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
   FileText,
   Users,
+  LogOut,
 } from "lucide-react";
 import { CommandBar } from "./CommandBar";
 import { DesktopStudio } from "./DesktopStudio";
@@ -24,10 +25,16 @@ import {
   subscribeToSessionChanges,
 } from "@/services/auth-service";
 import { uploadEncryptedDisasterBackup } from "@/services/cloud-backup-service";
+import { downloadInvoicePdfDirectly } from "@/services/pdf-download-service";
 import { useAccessibleMotion } from "@/design-system";
 import type { ClientDirectoryRecord } from "@/domain/types";
 
-export const AppShell: FC = () => {
+export interface AppShellProps {
+  userProfile?: { name: string; email: string; isGuest?: boolean } | null;
+  onSignOut?: () => void;
+}
+
+export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
   const {
     activeDocument,
     contractorProfile,
@@ -71,16 +78,16 @@ export const AppShell: FC = () => {
     });
   }, []);
 
-  // Global print shortcut: Alt+P (triggers backup snapshot simultaneously)
-  const handleTriggerPrint = () => {
+  // Global direct PDF download shortcut: Alt+P (and programmatic trigger)
+  const handleTriggerPrint = async () => {
     uploadEncryptedDisasterBackup(activeDocument).catch((backupError) => {
       console.warn("Disaster backup snapshot failed:", backupError);
     });
 
-    const iframe = document.querySelector("iframe");
-    if (iframe?.contentWindow) {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
+    try {
+      await downloadInvoicePdfDirectly(activeDocument);
+    } catch (exportError) {
+      console.error("Direct PDF export failed:", exportError);
     }
   };
 
@@ -148,11 +155,11 @@ export const AppShell: FC = () => {
     const targetDocument = await getDocumentByIdFromRepository(documentIdentifier);
     if (targetDocument) {
       uploadEncryptedDisasterBackup(targetDocument).catch(() => {});
-      loadArchivedDocumentIntoDraft(targetDocument);
-      setActiveView("editor");
-      setTimeout(() => {
-        handleTriggerPrint();
-      }, 400);
+      try {
+        await downloadInvoicePdfDirectly(targetDocument);
+      } catch (exportError) {
+        console.error("Direct PDF download failed:", exportError);
+      }
     }
   };
 
@@ -178,6 +185,8 @@ export const AppShell: FC = () => {
           onUpdateDocumentType={updateDocumentType}
           onTriggerExportPdf={handleTriggerPrint}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          userProfile={userProfile}
+          onSignOut={onSignOut}
         />
       </div>
 
@@ -218,6 +227,16 @@ export const AppShell: FC = () => {
             >
               <Lock className="w-3.5 h-3.5" />
             </button>
+            {onSignOut && (
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="w-8 h-8 rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </header>
       )}

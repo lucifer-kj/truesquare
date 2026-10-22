@@ -6,7 +6,7 @@ import {
   Eye,
   ArrowRight,
   ArrowLeft,
-  Printer,
+  Download,
   Search,
   Lock,
   MoreHorizontal,
@@ -467,8 +467,8 @@ export const MobileFieldTool: FC<MobileFieldToolProps> = ({
               onClick={onTriggerExportPdf}
               className="flex-1 flex items-center justify-center space-x-2 py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold active:scale-[0.98] transition-all shadow-md"
             >
-              <Printer className="w-4 h-4" />
-              <span>Export 1-Page PDF</span>
+              <Download className="w-4 h-4" />
+              <span>Download 1-Page PDF</span>
             </button>
           </div>
         )}

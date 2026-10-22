@@ -254,38 +254,27 @@ describe("Service: IndexedDB Repository & Document Vault", () => {
     expect(importResult.errorMessage).toBeDefined();
   });
 
-  it("manages sample demo data lifecycle correctly (purging, preventing re-seed, force seeding)", async () => {
-    // Force seed sample documents
+  it("ensures demo data is completely disabled and clean slate is maintained", async () => {
+    // Clean-slate verification: no demo documents are ever seeded into repository
     const seededCount = await forceSeedSampleContractorDocuments();
-    expect(seededCount).toBe(3);
+    expect(seededCount).toBe(0);
 
     const hasDemos = await hasDemoDocumentsInRepository();
-    expect(hasDemos).toBe(true);
+    expect(hasDemos).toBe(false);
 
-    // Add 1 real (non-demo) document
-    const realDocument = createMockDocument("real-doc-1", "INV-REAL-1", "invoice", "paid", "Real Client", 5000, 1);
-    await saveDocumentToRepository(realDocument);
-
-    const summariesBeforePurge = await listDocumentSummaries();
-    expect(summariesBeforePurge).toHaveLength(4);
-
-    // Purge demo documents
-    const purgedCount = await purgeDemoDocumentsFromRepository();
-    expect(purgedCount).toBe(3);
-
-    // Only real document remains
-    const summariesAfterPurge = await listDocumentSummaries();
-    expect(summariesAfterPurge).toHaveLength(1);
-    expect(summariesAfterPurge[0].id).toBe("real-doc-1");
-
-    // Empty repository should NOT re-seed because status is purged
+    // Empty repository will not seed demo documents
     await clearAllRepositoryData();
     await seedSampleContractorDocumentsIfEmpty();
     const docsAfterAutoSeed = await listDocumentSummaries();
     expect(docsAfterAutoSeed).toHaveLength(0);
 
-    // Reset status for test isolation
-    setSampleDataLifecycleStatus("active");
+    // Add 1 real document
+    const realDocument = createMockDocument("real-doc-1", "INV-REAL-1", "invoice", "paid", "Real Client", 5000, 1);
+    await saveDocumentToRepository(realDocument);
+
+    const summaries = await listDocumentSummaries();
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0].id).toBe("real-doc-1");
   });
 
   it("converts an estimate to an active tax invoice with sequential INV- number and saves both", async () => {

@@ -581,8 +581,7 @@ export function setSampleDataLifecycleStatus(status: "active" | "purged" | "reta
 }
 
 export async function hasDemoDocumentsInRepository(): Promise<boolean> {
-  const allDocuments = await fetchAllRawDocuments();
-  return allDocuments.some((doc) => doc.isDemo === true);
+  return false;
 }
 
 export async function purgeDemoDocumentsFromRepository(): Promise<number> {
@@ -599,205 +598,18 @@ export async function purgeDemoDocumentsFromRepository(): Promise<number> {
 }
 
 /**
- * Seeds sample realistic contractor documents if the vault is currently empty and not previously purged.
+ * Clean slate default: Zero demo data is auto-seeded into the repository.
  */
 export async function seedSampleContractorDocumentsIfEmpty(): Promise<void> {
-  const lifecycleStatus = getSampleDataLifecycleStatus();
-  if (lifecycleStatus === "purged") {
-    // Contractor explicitly purged sample data; do not auto-seed
-    return;
-  }
-
-  const existingDocuments = await fetchAllRawDocuments();
-  if (existingDocuments.length > 0) return;
-
-  await forceSeedSampleContractorDocuments();
+  return;
 }
 
 /**
- * Force seeds sample contractor documents on demand (e.g., from settings or testing).
+ * Returns 0 as demo data has been permanently removed.
  */
 export async function forceSeedSampleContractorDocuments(): Promise<number> {
-  setSampleDataLifecycleStatus("active");
-  const currentYear = new Date().getFullYear();
-  const sampleDocuments: InvoiceEstimateDocument[] = [
-    {
-      id: "doc-seed-001",
-      documentType: "invoice",
-      documentStatus: "paid",
-      documentNumber: `INV-${currentYear}-0101`,
-      issueDate: `${currentYear}-03-15`,
-      dueOrExpiryDate: `${currentYear}-04-15`,
-      business: {
-        businessName: "Lone Star Building Supply Co.",
-        addressLines: ["4200 Industrial Parkway"],
-        city: "Austin",
-        region: "TX",
-        postalCode: "78744",
-        country: "USA",
-        email: "billing@lonestarcontracting.com",
-        phone: "(512) 555-0199",
-        paymentInstructions: "ACH or check payable to Lone Star Building Supply Co. Net 30.",
-        defaultTaxLabel: "Texas State & Local Sales Tax",
-        defaultTaxRateBasisPoints: 825,
-      },
-      client: {
-        id: "client-ridge-homes",
-        name: "Marcus Vance",
-        companyName: "Ridgeview Custom Homes LLC",
-        addressLines: ["7804 Canyon Ridge Trail"],
-        city: "Austin",
-        region: "TX",
-        postalCode: "78731",
-        country: "USA",
-        email: "marcus@ridgeviewcustom.com",
-        phone: "(512) 555-8834",
-      },
-      currency: "USD",
-      items: [
-        {
-          id: "item-seed-1",
-          description: "USG Sheetrock Brand Drywall Panel 1/2-in x 4-ft x 8-ft",
-          specification: "1/2 in thick, gypsum core, tapered edges",
-          unit: "Sheet",
-          quantity: 45,
-          unitPriceCents: 1548,
-          taxable: true,
-        },
-        {
-          id: "item-seed-2",
-          description: "Sheetrock All Purpose Joint Compound 4.5-Gal",
-          specification: "Pre-mixed vinyl formulation",
-          unit: "Pail",
-          quantity: 6,
-          unitPriceCents: 2198,
-          taxable: true,
-        },
-      ],
-      taxLabel: "Texas Sales Tax",
-      taxRateBasisPoints: 825,
-      notes: "Commercial delivery unloaded to staging bay 2.",
-      paymentTerms: "Net 30 Days",
-      generatedFromBudget: false,
-      isDemo: true,
-      createdAt: `${currentYear}-03-15T09:00:00.000Z`,
-      updatedAt: `${currentYear}-03-15T09:00:00.000Z`,
-      catalogueVersion: "1.0.0",
-    },
-    {
-      id: "doc-seed-002",
-      documentType: "invoice",
-      documentStatus: "issued",
-      documentNumber: `INV-${currentYear}-0102`,
-      issueDate: `${currentYear}-04-01`,
-      dueOrExpiryDate: `${currentYear}-05-01`,
-      business: {
-        businessName: "Lone Star Building Supply Co.",
-        addressLines: ["4200 Industrial Parkway"],
-        city: "Austin",
-        region: "TX",
-        postalCode: "78744",
-        country: "USA",
-        email: "billing@lonestarcontracting.com",
-        phone: "(512) 555-0199",
-        paymentInstructions: "ACH or check payable to Lone Star Building Supply Co. Net 30.",
-        defaultTaxLabel: "Texas State & Local Sales Tax",
-        defaultTaxRateBasisPoints: 825,
-      },
-      client: {
-        id: "client-pinnacle-framing",
-        name: "Elena Rostova",
-        companyName: "Pinnacle Framing & Carpentry",
-        addressLines: ["1200 E 4th Street, Suite 300"],
-        city: "Austin",
-        region: "TX",
-        postalCode: "78702",
-        country: "USA",
-        email: "elena@pinnacleframing.com",
-        phone: "(512) 555-4421",
-      },
-      currency: "USD",
-      items: [
-        {
-          id: "item-seed-3",
-          description: "2x4x8 SPF Premium Kiln-Dried Stud",
-          specification: "Grade #2 or better, spruce-pine-fir",
-          unit: "Piece",
-          quantity: 120,
-          unitPriceCents: 425,
-          taxable: true,
-        },
-      ],
-      taxLabel: "Texas Sales Tax",
-      taxRateBasisPoints: 825,
-      notes: "Pallet delivery with boom lift drop-off.",
-      paymentTerms: "Net 30 Days",
-      generatedFromBudget: false,
-      isDemo: true,
-      createdAt: `${currentYear}-04-01T10:00:00.000Z`,
-      updatedAt: `${currentYear}-04-01T10:00:00.000Z`,
-      catalogueVersion: "1.0.0",
-    },
-    {
-      id: "doc-seed-003",
-      documentType: "estimate",
-      documentStatus: "saved",
-      documentNumber: `EST-${currentYear}-0045`,
-      issueDate: `${currentYear}-04-10`,
-      dueOrExpiryDate: `${currentYear}-05-10`,
-      business: {
-        businessName: "Lone Star Building Supply Co.",
-        addressLines: ["4200 Industrial Parkway"],
-        city: "Austin",
-        region: "TX",
-        postalCode: "78744",
-        country: "USA",
-        email: "billing@lonestarcontracting.com",
-        phone: "(512) 555-0199",
-        paymentInstructions: "Estimate valid for 30 days.",
-        defaultTaxLabel: "Texas State & Local Sales Tax",
-        defaultTaxRateBasisPoints: 825,
-      },
-      client: {
-        id: "client-vance-residence",
-        name: "David Miller",
-        companyName: "Miller Custom Renovations",
-        addressLines: ["3301 South Lamar Blvd"],
-        city: "Austin",
-        region: "TX",
-        postalCode: "78704",
-        country: "USA",
-        email: "david@millerreno.com",
-        phone: "(512) 555-9012",
-      },
-      currency: "USD",
-      items: [
-        {
-          id: "item-seed-4",
-          description: "Knauf EcoBatt R-13 Kraft Faced Fiberglass Insulation 15-in x 32-ft",
-          specification: "Thermal resistance R-13, kraft vapor retarder",
-          unit: "Roll",
-          quantity: 18,
-          unitPriceCents: 2495,
-          taxable: true,
-        },
-      ],
-      taxLabel: "Texas Sales Tax",
-      taxRateBasisPoints: 825,
-      notes: "Price locked until expiration date.",
-      paymentTerms: "Due Upon Acceptance",
-      generatedFromBudget: false,
-      isDemo: true,
-      createdAt: `${currentYear}-04-10T14:00:00.000Z`,
-      updatedAt: `${currentYear}-04-10T14:00:00.000Z`,
-      catalogueVersion: "1.0.0",
-    },
-  ];
-
-  for (const sampleDocument of sampleDocuments) {
-    await saveDocumentToRepository(sampleDocument);
-  }
-  return sampleDocuments.length;
+  setSampleDataLifecycleStatus("purged");
+  return 0;
 }
 
 /**
