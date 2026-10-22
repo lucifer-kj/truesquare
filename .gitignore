@@ -1,5 +1,41 @@
-# Logs
-logs
+# Dependencies & Package Managers
+node_modules/
+.pnpm-store/
+
+# Production Builds & Bundler Outputs
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+.rollup.cache/
+.vite/
+
+# Vercel Serverless & Deployment Cache
+.vercel/
+
+# Environment Variables & Sensitive Credentials (CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+*.env
+
+# Allow sample template env file
+!.env.example
+
+# TrueSquare Encrypted Vault Backups & Snapshots
+*.bbvault
+*.vault
+
+# Testing & Coverage
+coverage/
+*.lcov
+.vitest/
+
+# Runtime Logs & Debug Dumps
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,18 +43,26 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# IDE & Editor Directories
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.sublime-project
+*.sublime-workspace
+
+# Operating System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
