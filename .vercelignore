@@ -1,0 +1,8 @@
+node_modules
+.git
+.gemini
+tests
+*.test.ts
+*.test.tsx
+.env.local
+.env*.local
