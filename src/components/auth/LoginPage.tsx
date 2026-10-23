@@ -57,13 +57,10 @@ export const LoginPage: FC<LoginPageProps> = ({ onAuthenticationSuccess }) => {
         });
       }
     } catch (networkError) {
-      console.warn("Auth network fallback:", networkError);
-      // If serverless is offline or local dev without active backend, allow entry with clear notice
-      onAuthenticationSuccess({
-        name: fullName.trim() || emailAddress.split("@")[0] || "Contractor",
-        email: emailAddress.trim(),
-        isGuest: false,
-      });
+      console.warn("Authentication network error:", networkError);
+      setErrorMessage(
+        "Unable to reach the authentication server. Please verify your connection or use Offline Local Vault below for field drafting."
+      );
     } finally {
       setIsSubmitting(false);
     }

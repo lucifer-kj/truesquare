@@ -67,7 +67,7 @@ function calculateDocumentTotalCents(targetDocument: InvoiceEstimateDocument): n
   let taxableSubtotalCents = 0;
 
   for (const lineItem of targetDocument.items) {
-    const lineTotalCents = calculateLineTotalCents(lineItem.quantity, lineItem.unitPriceCents);
+    const lineTotalCents = calculateLineTotalCents(lineItem.unitPriceCents, lineItem.quantity);
     subtotalCents += lineTotalCents;
     if (lineItem.taxable) {
       taxableSubtotalCents += lineTotalCents;

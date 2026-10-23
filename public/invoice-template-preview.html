@@ -38,19 +38,16 @@
     overflow-x: hidden;
   }
 
-  /* Sheet container - Fixed Letter height with flex column layout */
+  /* Sheet container - Flexible Letter height with clean pagination */
   .page {
     background: #ffffff;
     width: 8.5in;
-    height: 11in;
     min-height: 11in;
-    max-height: 11in;
     margin: 0 auto;
     padding: 0.45in 0.55in;
     box-shadow: 0 4px 25px rgba(0,0,0,0.25);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     position: relative;
     box-sizing: border-box;
   }
@@ -599,6 +596,8 @@ function renderInvoice(rawPayload) {
   const ONES = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
   const TENS = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
   function words(n) {
+    if (!Number.isFinite(n) || n < 0 || n > 999999999999) return 'Zero';
+    n = Math.floor(n);
     if (n === 0) return 'Zero';
     if (n < 20) return ONES[n];
     if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '');
@@ -767,8 +766,11 @@ function renderInvoice(rawPayload) {
   const initialPayload = window.INVOICE_DATA || JSON.parse(document.getElementById('invoice-data').textContent);
   renderInvoice(initialPayload);
 
-  // Listen for live updates from BuildBill app
+  // Listen for live updates from TrueSquare app
   window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin && window.location.origin !== "null" && window.location.protocol !== "file:") {
+      return;
+    }
     if (event.data && event.data.type === 'SYNC_INVOICE_DATA' && event.data.payload) {
       renderInvoice(event.data.payload);
     } else if (event.data && event.data.type === 'TRIGGER_PRINT') {

@@ -6,7 +6,19 @@ import {
 } from "./vault-crypto-service";
 
 const CLOUD_BACKUP_STORAGE_KEY = "buildbill:v1:cloud-backup-snapshots";
-const DEFAULT_DISASTER_RECOVERY_PASSCODE = "BuildBillMasterRecoveryKey#2026";
+
+function getOrGenerateDisasterRecoveryPasscode(): string {
+  if (typeof window === "undefined") return "TrueSquareLocalVaultFallbackKey#2026";
+  const STORAGE_KEY = "truesquare:v1:vault-device-entropy";
+  let deviceKey = window.localStorage.getItem(STORAGE_KEY);
+  if (!deviceKey) {
+    const randomBytes = new Uint8Array(32);
+    window.crypto.getRandomValues(randomBytes);
+    deviceKey = Array.from(randomBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+    window.localStorage.setItem(STORAGE_KEY, deviceKey);
+  }
+  return deviceKey;
+}
 
 /**
  * Computes SHA-256 checksum of raw ciphertext string for integrity auditing.
@@ -25,10 +37,11 @@ async function computeCiphertextChecksumSha256(ciphertext: string): Promise<stri
  */
 export async function uploadEncryptedDisasterBackup(
   invoiceDocument: InvoiceEstimateDocument,
-  encryptionPasscode: string = DEFAULT_DISASTER_RECOVERY_PASSCODE
+  encryptionPasscode?: string
 ): Promise<CloudBackupSnapshot> {
+  const effectivePasscode = encryptionPasscode || getOrGenerateDisasterRecoveryPasscode();
   // 1. Encrypt the entire document losslessly into an AES-GCM 256 ciphertext payload
-  const encryptedPayload = await encryptInvoiceDocument(invoiceDocument, encryptionPasscode);
+  const encryptedPayload = await encryptInvoiceDocument(invoiceDocument, effectivePasscode);
 
   // 2. Generate SHA-256 integrity checksum of the ciphertext
   const checksum = await computeCiphertextChecksumSha256(encryptedPayload.ciphertextBase64);
@@ -70,8 +83,9 @@ export async function listAvailableCloudBackupSnapshots(): Promise<CloudBackupSn
  */
 export async function restoreDocumentFromCloudSnapshot(
   targetSnapshotId: string,
-  decryptionPasscode: string = DEFAULT_DISASTER_RECOVERY_PASSCODE
+  decryptionPasscode?: string
 ): Promise<InvoiceEstimateDocument> {
+  const effectivePasscode = decryptionPasscode || getOrGenerateDisasterRecoveryPasscode();
   const allSnapshots = loadSnapshotsFromLog();
   const targetSnapshot = allSnapshots.find((snap) => snap.snapshotId === targetSnapshotId);
 
@@ -90,7 +104,7 @@ export async function restoreDocumentFromCloudSnapshot(
   }
 
   // 3. Decrypt document back to verified domain object
-  return decryptInvoiceDocument(encryptedPayload, decryptionPasscode);
+  return decryptInvoiceDocument(encryptedPayload, effectivePasscode);
 }
 
 let fallbackSnapshotsList: CloudBackupSnapshot[] = [];

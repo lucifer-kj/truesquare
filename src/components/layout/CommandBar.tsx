@@ -12,6 +12,7 @@ import {
   Sparkles,
   Download,
   LogOut,
+  Loader2,
 } from "lucide-react";
 import type { DocumentClassificationType } from "@/domain/types";
 import { downloadVaultBackupFile } from "@/services/indexeddb-repository";
@@ -35,6 +36,7 @@ export interface CommandBarProps {
   onOpenCommandPalette?: () => void;
   userProfile?: { name: string; email: string; isGuest?: boolean } | null;
   onSignOut?: () => void;
+  isGeneratingPdf?: boolean;
 }
 
 export const CommandBar: FC<CommandBarProps> = ({
@@ -53,6 +55,7 @@ export const CommandBar: FC<CommandBarProps> = ({
   onOpenCommandPalette,
   userProfile,
   onSignOut,
+  isGeneratingPdf = false,
 }) => {
   const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState<boolean>(false);
   const actionsDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -358,12 +361,26 @@ export const CommandBar: FC<CommandBarProps> = ({
             <button
               type="button"
               onClick={onTriggerExportPdf}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition-all shadow-xs active:scale-95"
+              disabled={isGeneratingPdf}
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 text-xs rounded-lg font-semibold transition-all shadow-xs active:scale-95 ${
+                isGeneratingPdf
+                  ? "bg-primary/70 text-primary-foreground cursor-wait opacity-80"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
+              }`}
               aria-label="Direct Download PDF Document"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
-              <span className="hidden md:inline text-[10px] opacity-75 font-mono">Alt+P</span>
+              {isGeneratingPdf ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                  <span className="hidden md:inline text-[10px] opacity-75 font-mono">Alt+P</span>
+                </>
+              )}
             </button>
           </Tooltip>
         )}

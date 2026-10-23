@@ -1,6 +1,11 @@
 import { Pool } from "@neondatabase/serverless";
 
-const databaseUrl = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_mkJ4QvjMzyL6@ep-wandering-breeze-b44vz9m1-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  console.error("DATABASE_URL environment variable is required to run migrations.");
+  process.exit(1);
+}
 
 async function setupBetterAuthTables() {
   const pool = new Pool({ connectionString: databaseUrl });

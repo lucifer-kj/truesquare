@@ -65,12 +65,45 @@ export const ClientDirectory: FC<ClientDirectoryProps> = ({
         </div>
       ) : clientRecords.length === 0 ? (
         /* Empty State */
-        <div className="p-8 text-center border-2 border-dashed border-border rounded-xl text-muted-foreground bg-muted/10 space-y-2">
+        <div className="p-8 text-center border-2 border-dashed border-border rounded-xl text-muted-foreground bg-muted/10 space-y-3">
           <Users className="w-8 h-8 text-muted-foreground mx-auto" />
-          <h4 className="text-xs font-bold text-foreground">No Clients Found</h4>
-          <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-            Clients are automatically registered when you draft and save estimates or invoices.
-          </p>
+          <div>
+            <h4 className="text-xs font-bold text-foreground">No Clients Found</h4>
+            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto mt-1">
+              Clients are automatically registered when you draft and save estimates or invoices.
+            </p>
+          </div>
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() =>
+                onCreateDocumentForClient(
+                  {
+                    id: `client-${Date.now()}`,
+                    name: "New Client",
+                    companyName: "",
+                    email: "",
+                    phone: "",
+                    addressLines: [],
+                    city: "",
+                    region: "",
+                    postalCode: "",
+                    country: "USA",
+                    totalBilledCents: 0,
+                    documentCount: 0,
+                    lastDocumentDate: new Date().toISOString().split("T")[0],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  },
+                  "estimate"
+                )
+              }
+              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Draft Estimate for New Client</span>
+            </button>
+          </div>
         </div>
       ) : (
         /* Client Cards Grid */

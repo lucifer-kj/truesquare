@@ -431,14 +431,18 @@ export const InvoicePdfDocument: React.FC<InvoicePdfDocumentProps> = ({
 export async function downloadInvoicePdfDirectly(
   invoiceDocument: InvoiceEstimateDocument
 ): Promise<void> {
-  const cleanDocumentFileName = `${invoiceDocument.documentNumber}_${(
+  const sanitizedDocNumber = (invoiceDocument.documentNumber || "INV-0000").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const sanitizedClientName = (
     invoiceDocument.client.companyName ||
     invoiceDocument.client.name ||
     "Contractor_Invoice"
-  ).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+  ).replace(/[^a-zA-Z0-9_-]/g, "_");
+  const cleanDocumentFileName = `${sanitizedDocNumber}_${sanitizedClientName}`;
 
   // 1. Generate real vector PDF binary blob
-  const documentElement = React.createElement(InvoicePdfDocument, { invoiceDocument });
+  const documentElement = React.createElement(InvoicePdfDocument, {
+    invoiceDocument,
+  }) as unknown as Parameters<typeof pdf>[0];
   const pdfBlob = await pdf(documentElement).toBlob();
 
   // 2. Programmatically dispatch automatic browser file download

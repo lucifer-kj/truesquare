@@ -66,12 +66,13 @@ export const InvoicePreviewFrame: FC<InvoicePreviewFrameProps> = ({
     }
 
     const templatePayload = mapDocumentToInvoiceTemplatePayload(invoiceDocument);
+    const targetOrigin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "*";
     targetIframe.contentWindow?.postMessage(
       {
         type: "SYNC_INVOICE_DATA",
         payload: templatePayload,
       },
-      "*"
+      targetOrigin
     );
   }, [invoiceDocument, iframeLoadedState]);
 
@@ -80,12 +81,13 @@ export const InvoicePreviewFrame: FC<InvoicePreviewFrameProps> = ({
     const targetIframe = iframeElementReference.current;
     if (targetIframe) {
       const templatePayload = mapDocumentToInvoiceTemplatePayload(invoiceDocument);
+      const targetOrigin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "*";
       targetIframe.contentWindow?.postMessage(
         {
           type: "SYNC_INVOICE_DATA",
           payload: templatePayload,
         },
-        "*"
+        targetOrigin
       );
     }
   };
@@ -171,6 +173,7 @@ export const InvoicePreviewFrame: FC<InvoicePreviewFrameProps> = ({
               src="/invoice-template-preview.html"
               title="Invoice Document Preview Frame"
               scrolling="no"
+              sandbox="allow-scripts allow-modals allow-same-origin"
               className="w-full h-full border-0 bg-white overflow-hidden pointer-events-auto"
               onLoad={handleIframeLoadCompletion}
             />

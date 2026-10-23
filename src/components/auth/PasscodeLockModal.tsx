@@ -1,6 +1,6 @@
 import { useState, useEffect, type FC } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, HardHat, ShieldCheck, Delete, KeyRound } from "lucide-react";
+import { Lock, HardHat, ShieldCheck, Delete } from "lucide-react";
 import { unlockSessionWithPin } from "@/services/auth-service";
 import type { OperatorAccountProfile } from "@/domain/auth-types";
 import { useAccessibleMotion } from "@/design-system";
@@ -61,11 +61,6 @@ export const PasscodeLockModal: FC<PasscodeLockModalProps> = ({
     } finally {
       setIsVerifying(false);
     }
-  };
-
-  const handleDemoBypassUnlock = async () => {
-    setEnteredPin("1234");
-    await verifyPinAttempt("1234");
   };
 
   // Physical keyboard listener
@@ -202,18 +197,6 @@ export const PasscodeLockModal: FC<PasscodeLockModalProps> = ({
               title="Backspace"
             >
               <Delete className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Quick Demo Unlock Link */}
-          <div className="pt-2 border-t border-border/60">
-            <button
-              type="button"
-              onClick={handleDemoBypassUnlock}
-              className="inline-flex items-center space-x-1.5 text-xs text-primary hover:underline font-semibold"
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>Instant Demo Unlock (Default: 1234)</span>
             </button>
           </div>
         </motion.div>

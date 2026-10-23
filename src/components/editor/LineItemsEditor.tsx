@@ -1,4 +1,4 @@
-import { useState, type FC } from "react";
+import { useState, useRef, useEffect, type FC } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type {
   SupplyLineItem,
@@ -24,6 +24,108 @@ import {
   Plus,
   SlidersHorizontal,
 } from "lucide-react";
+
+interface PriceInputFieldProps {
+  cents: number;
+  onCommitCents: (newCents: number) => void;
+  className?: string;
+}
+
+const PriceInputField: FC<PriceInputFieldProps> = ({ cents, onCommitCents, className }) => {
+  const [localText, setLocalText] = useState<string>((cents / 100).toFixed(2));
+  const isFocusedRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setLocalText((cents / 100).toFixed(2));
+    }
+  }, [cents]);
+
+  const handleChange = (changeEvent: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = changeEvent.target.value;
+    setLocalText(raw);
+    const num = parseFloat(raw);
+    if (!isNaN(num) && isFinite(num) && num >= 0) {
+      onCommitCents(Math.round(num * 100));
+    } else if (raw === "" || raw === ".") {
+      onCommitCents(0);
+    }
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    const num = parseFloat(localText);
+    const sanitizedCents = !isNaN(num) && isFinite(num) && num >= 0 ? Math.round(num * 100) : 0;
+    setLocalText((sanitizedCents / 100).toFixed(2));
+    onCommitCents(sanitizedCents);
+  };
+
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      min="0"
+      step="0.01"
+      value={localText}
+      onFocus={() => {
+        isFocusedRef.current = true;
+      }}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      className={className}
+    />
+  );
+};
+
+interface QuantityInputFieldProps {
+  quantity: number;
+  onCommitQuantity: (newQuantity: number) => void;
+  className?: string;
+}
+
+const QuantityInputField: FC<QuantityInputFieldProps> = ({ quantity, onCommitQuantity, className }) => {
+  const [localText, setLocalText] = useState<string>(String(quantity));
+  const isFocusedRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setLocalText(String(quantity));
+    }
+  }, [quantity]);
+
+  const handleChange = (changeEvent: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = changeEvent.target.value;
+    setLocalText(raw);
+    const num = parseFloat(raw);
+    if (!isNaN(num) && isFinite(num) && num > 0) {
+      onCommitQuantity(num);
+    }
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    const num = parseFloat(localText);
+    const sanitizedQuantity = !isNaN(num) && isFinite(num) && num > 0 ? num : 1;
+    setLocalText(String(sanitizedQuantity));
+    onCommitQuantity(sanitizedQuantity);
+  };
+
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      min="0.01"
+      step="any"
+      value={localText}
+      onFocus={() => {
+        isFocusedRef.current = true;
+      }}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      className={className}
+    />
+  );
+};
 
 interface LineItemsEditorProps {
   supplyLineItems: SupplyLineItem[];
@@ -314,8 +416,8 @@ export const LineItemsEditor: FC<LineItemsEditorProps> = ({
             <AnimatePresence mode="popLayout">
               {supplyLineItems.map((supplyLineItem, itemIndex) => {
                 const calculatedLineTotal = calculateLineTotalCents(
-                  supplyLineItem.quantity,
-                  supplyLineItem.unitPriceCents
+                  supplyLineItem.unitPriceCents,
+                  supplyLineItem.quantity
                 );
 
                 return (
@@ -451,18 +553,13 @@ export const LineItemsEditor: FC<LineItemsEditorProps> = ({
                       <label className="block text-[10px] font-medium text-muted-foreground mb-1">
                         Price ($)
                       </label>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="0.01"
-                        value={(supplyLineItem.unitPriceCents / 100).toFixed(2)}
-                        onChange={(changeEvent) => {
-                          const parsedCents = Math.round(Number(changeEvent.target.value) * 100);
+                      <PriceInputField
+                        cents={supplyLineItem.unitPriceCents}
+                        onCommitCents={(parsedCents) =>
                           onUpdateSupplyLineItem(supplyLineItem.id, {
                             unitPriceCents: parsedCents,
-                          });
-                        }}
+                          })
+                        }
                         className="w-full h-8 text-right text-xs bg-input border border-border rounded-lg px-2 text-foreground font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
@@ -518,8 +615,8 @@ export const LineItemsEditor: FC<LineItemsEditorProps> = ({
                 <AnimatePresence mode="popLayout">
                   {supplyLineItems.map((supplyLineItem, itemIndex) => {
                     const calculatedLineTotal = calculateLineTotalCents(
-                      supplyLineItem.quantity,
-                      supplyLineItem.unitPriceCents
+                      supplyLineItem.unitPriceCents,
+                      supplyLineItem.quantity
                     );
 
                     return (
@@ -578,34 +675,26 @@ export const LineItemsEditor: FC<LineItemsEditorProps> = ({
 
                       {/* Qty */}
                       <td className="py-2 px-1 text-right">
-                        <input
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={supplyLineItem.quantity}
-                          onChange={(changeEvent) => {
-                            const parsedQuantity = Math.max(1, Number(changeEvent.target.value));
+                        <QuantityInputField
+                          quantity={supplyLineItem.quantity}
+                          onCommitQuantity={(parsedQuantity) =>
                             onUpdateSupplyLineItem(supplyLineItem.id, {
                               quantity: parsedQuantity,
-                            });
-                          }}
+                            })
+                          }
                           className="w-11 text-right text-xs bg-input border border-border rounded px-1 py-0.5 text-foreground font-mono"
                         />
                       </td>
 
                       {/* Unit Price */}
                       <td className="py-2 px-1 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={(supplyLineItem.unitPriceCents / 100).toFixed(2)}
-                          onChange={(changeEvent) => {
-                            const parsedCents = Math.round(Number(changeEvent.target.value) * 100);
+                        <PriceInputField
+                          cents={supplyLineItem.unitPriceCents}
+                          onCommitCents={(parsedCents) =>
                             onUpdateSupplyLineItem(supplyLineItem.id, {
                               unitPriceCents: parsedCents,
-                            });
-                          }}
+                            })
+                          }
                           className="w-16 text-right text-xs bg-input border border-border rounded px-1 py-0.5 text-foreground font-mono"
                         />
                       </td>

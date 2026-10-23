@@ -79,7 +79,12 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
   }, []);
 
   // Global direct PDF download shortcut: Alt+P (and programmatic trigger)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
+
   const handleTriggerPrint = async () => {
+    if (isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
+
     uploadEncryptedDisasterBackup(activeDocument).catch((backupError) => {
       console.warn("Disaster backup snapshot failed:", backupError);
     });
@@ -88,6 +93,8 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
       await downloadInvoicePdfDirectly(activeDocument);
     } catch (exportError) {
       console.error("Direct PDF export failed:", exportError);
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -126,16 +133,16 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
     }
   };
 
-  const handleCreateNewDocument = (documentType: "estimate" | "invoice") => {
-    startNewBlankDocument(documentType);
+  const handleCreateNewDocument = async (documentType: "estimate" | "invoice") => {
+    await startNewBlankDocument(documentType);
     setActiveView("editor");
   };
 
-  const handleCreateDocumentForClient = (
+  const handleCreateDocumentForClient = async (
     clientRecord: ClientDirectoryRecord,
     documentType: "estimate" | "invoice"
   ) => {
-    startNewBlankDocument(documentType);
+    await startNewBlankDocument(documentType);
     updateClientRecord({
       id: clientRecord.id,
       name: clientRecord.name,
@@ -187,6 +194,7 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           userProfile={userProfile}
           onSignOut={onSignOut}
+          isGeneratingPdf={isGeneratingPdf}
         />
       </div>
 

@@ -21,6 +21,10 @@ import {
   savePersistedRecentClient,
 } from "../services/local-storage-service";
 import { generateDocumentNumber } from "../domain/invoice-number";
+import {
+  saveDocumentToRepository,
+  listDocumentSummaries,
+} from "../services/indexeddb-repository";
 
 export type DraftPersistenceStatus = "saved" | "saving" | "idle";
 
@@ -54,8 +58,20 @@ export function useDocumentDraft() {
       clearTimeout(debounceTimerRef.current);
     }
 
-    debounceTimerRef.current = setTimeout(() => {
+    debounceTimerRef.current = setTimeout(async () => {
       savePersistedDocumentDraft(activeDocument);
+      // Auto-vault to IndexedDB if document contains items or client details
+      if (
+        activeDocument.items.length > 0 ||
+        activeDocument.client.name.trim() ||
+        (activeDocument.client.companyName && activeDocument.client.companyName.trim())
+      ) {
+        try {
+          await saveDocumentToRepository(activeDocument);
+        } catch (vaultError) {
+          console.warn("IndexedDB draft autosave notice:", vaultError);
+        }
+      }
       setPersistenceStatus("saved");
     }, 600);
 
@@ -176,22 +192,44 @@ export function useDocumentDraft() {
     }));
   }, []);
 
-  const startNewBlankDocument = useCallback((type: DocumentClassificationType = "estimate") => {
-    const existingArchive = loadPersistedSavedDocuments();
-    const existingNumbers = existingArchive.map((doc) => doc.documentNumber);
+  const startNewBlankDocument = useCallback(
+    async (type: DocumentClassificationType = "estimate") => {
+      // Ensure existing active draft is safely vaulted before starting a new document
+      if (
+        activeDocument.items.length > 0 ||
+        activeDocument.client.name.trim() ||
+        (activeDocument.client.companyName && activeDocument.client.companyName.trim())
+      ) {
+        try {
+          await saveDocumentToRepository(activeDocument);
+        } catch (vaultError) {
+          console.warn("Could not vault active draft prior to new blank document:", vaultError);
+        }
+      }
 
-    const freshDraft = createNewDocumentDraft({
-      documentType: type,
-      contractorProfile,
-      existingDocumentNumbers: existingNumbers,
-    });
+      let existingNumbers: string[] = [];
+      try {
+        const summaries = await listDocumentSummaries();
+        existingNumbers = summaries.map((doc) => doc.documentNumber);
+      } catch {
+        const existingArchive = loadPersistedSavedDocuments();
+        existingNumbers = existingArchive.map((doc) => doc.documentNumber);
+      }
 
-    setActiveDocument(freshDraft);
-    savePersistedDocumentDraft(freshDraft);
-  }, [contractorProfile]);
+      const freshDraft = createNewDocumentDraft({
+        documentType: type,
+        contractorProfile,
+        existingDocumentNumbers: existingNumbers,
+      });
+
+      setActiveDocument(freshDraft);
+      savePersistedDocumentDraft(freshDraft);
+    },
+    [contractorProfile, activeDocument]
+  );
 
   const loadArchivedDocumentIntoDraft = useCallback((archivedDoc: InvoiceEstimateDocument) => {
-    setActiveDocument({ ...archivedDoc, documentStatus: "draft" });
+    setActiveDocument(archivedDoc);
     savePersistedDocumentDraft(archivedDoc);
   }, []);
 
@@ -213,13 +251,20 @@ export function useDocumentDraft() {
     savePersistedDocumentDraft(duplicatedDoc);
   }, [activeDocument]);
 
-  const finalizeAndArchiveDocument = useCallback(() => {
-    saveFinalizedDocumentToArchive(activeDocument);
-    setActiveDocument((prevDoc) => ({
-      ...prevDoc,
-      documentStatus: "saved",
+  const finalizeAndArchiveDocument = useCallback(async () => {
+    const finalizedDoc: InvoiceEstimateDocument = {
+      ...activeDocument,
+      documentStatus: "issued",
       updatedAt: new Date().toISOString(),
-    }));
+    };
+    try {
+      await saveDocumentToRepository(finalizedDoc);
+    } catch (saveError) {
+      console.warn("Could not save finalized document to repository:", saveError);
+    }
+    saveFinalizedDocumentToArchive(finalizedDoc);
+    setActiveDocument(finalizedDoc);
+    savePersistedDocumentDraft(finalizedDoc);
   }, [activeDocument]);
 
   return {
