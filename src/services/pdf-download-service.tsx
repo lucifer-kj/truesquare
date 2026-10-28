@@ -6,13 +6,18 @@ import {
   Text,
   View,
   StyleSheet,
-  Svg,
-  Path,
+  Font,
 } from "@react-pdf/renderer";
 import type { InvoiceEstimateDocument } from "@/domain/types";
 import { formatCents } from "@/domain/money";
 import { calculateDocumentTotals } from "@/domain/calculations";
-import { generateRealisticSignaturePaths } from "@/domain/signature-service";
+import { CAVEAT_FONT_DATA_URI } from "@/domain/signature-font-data";
+
+// Register offline, self-contained cursive signature font
+Font.register({
+  family: "ContractorSignature",
+  src: CAVEAT_FONT_DATA_URI,
+});
 
 // PDF Vector Document Stylesheet
 const pdfStyles = StyleSheet.create({
@@ -213,11 +218,18 @@ const pdfStyles = StyleSheet.create({
     lineHeight: 1.3,
   },
   signatureLine: {
-    width: 150,
+    width: 170,
     borderTopWidth: 1,
     borderTopColor: "#94a3b8",
-    paddingTop: 3,
+    paddingTop: 4,
     alignItems: "center",
+  },
+  signatureHandwritten: {
+    fontFamily: "ContractorSignature",
+    fontSize: 22,
+    color: "#0f2744",
+    textAlign: "center",
+    marginBottom: 2,
   },
   signatureSignatory: {
     fontSize: 8,
@@ -426,20 +438,9 @@ export const InvoicePdfDocument: React.FC<InvoicePdfDocumentProps> = ({
           </View>
 
           <View style={{ alignItems: "center" }}>
-            <Svg width={140} height={32} viewBox="0 0 144 32">
-              <Path
-                d={generateRealisticSignaturePaths(invoiceDocument.business.businessName).primaryFlourishPath}
-                stroke="#1e3a8a"
-                strokeWidth={1.5}
-                fill="none"
-              />
-              <Path
-                d={generateRealisticSignaturePaths(invoiceDocument.business.businessName).penUnderlinePath}
-                stroke="#1e3a8a"
-                strokeWidth={1.1}
-                fill="none"
-              />
-            </Svg>
+            <Text style={pdfStyles.signatureHandwritten}>
+              {invoiceDocument.business.businessName || "Authorized Signatory"}
+            </Text>
             <View style={pdfStyles.signatureLine}>
               <Text style={pdfStyles.signatureSignatory}>
                 {invoiceDocument.business.businessName || "Authorized Representative"}

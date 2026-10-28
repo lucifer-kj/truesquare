@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Invoice</title>
 <style>
+  @font-face {
+    font-family: 'ContractorSignature';
+    src: url('/fonts/Caveat-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
   @page {
     size: Letter portrait;
     margin: 8mm 10mm 8mm 10mm;
@@ -735,45 +741,9 @@ function renderInvoice(rawPayload) {
       sigLine.appendChild(im);
     } else {
       const signatoryName = D.signature.name || 'Authorized Signatory';
-      // Generate realistic deterministic vector curve
-      let hash = 0;
-      for (let i = 0; i < signatoryName.length; i++) {
-        hash = (hash << 5) - hash + signatoryName.charCodeAt(i);
-        hash |= 0;
-      }
-      const seed = Math.abs(hash);
-      const startY = 13 + (seed % 5);
-      const peakY = 4 + ((seed >> 2) % 4);
-      const midDipY = 17 + ((seed >> 4) % 5);
-      const loopY = 22 + ((seed >> 6) % 5);
-
-      const p1 = 'M 8 ' + startY + ' C 16 ' + peakY + ', 22 ' + (peakY - 2) + ', 30 ' + midDipY + ' C 38 ' + loopY + ', 46 25, 54 11 C 60 3, 66 7, 72 17 C 78 25, 84 9, 90 13 C 98 17, 106 25, 114 11 C 120 4, 128 13, 136 19';
-      const p2 = 'M 14 ' + (midDipY + 3) + ' C 40 ' + (midDipY + 6) + ', 85 ' + (midDipY + 4) + ', 140 ' + (midDipY + 1);
-
-      const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svgEl.setAttribute('width', '140');
-      svgEl.setAttribute('height', '30');
-      svgEl.setAttribute('viewBox', '0 0 144 32');
-      svgEl.style.cssText = 'display:block;margin-bottom:2px;';
-
-      const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path1.setAttribute('d', p1);
-      path1.setAttribute('stroke', '#1e3a8a');
-      path1.setAttribute('stroke-width', '1.6');
-      path1.setAttribute('stroke-linecap', 'round');
-      path1.setAttribute('stroke-linejoin', 'round');
-      path1.setAttribute('fill', 'none');
-
-      const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path2.setAttribute('d', p2);
-      path2.setAttribute('stroke', '#1e3a8a');
-      path2.setAttribute('stroke-width', '1.1');
-      path2.setAttribute('stroke-linecap', 'round');
-      path2.setAttribute('fill', 'none');
-
-      svgEl.appendChild(path1);
-      svgEl.appendChild(path2);
-      sigLine.appendChild(svgEl);
+      const handText = el('span', signatoryName);
+      handText.style.cssText = 'font-family:"ContractorSignature","Segoe Script","Brush Script MT",cursive;font-size:18pt;color:#0f2744;display:block;transform:rotate(-1.5deg);margin-bottom:2px;';
+      sigLine.appendChild(handText);
     }
     
     const cap = $('sigCap');
