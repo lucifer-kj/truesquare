@@ -132,14 +132,18 @@ ${invoiceDocument.business.phone ? `Phone: ${invoiceDocument.business.phone}\n` 
         setSendStatus("success");
         if (result.provider === "pending_configuration") {
           setStatusMessage(
-            "Email dispatched! (Endpoint ready; configure your mail API keys in environment variables for live delivery)."
+            "Email dispatched! (Endpoint ready; configure RESEND_API_KEY in Vercel environment variables for live delivery)."
           );
         } else {
           setStatusMessage("Email sent successfully with PDF attachment!");
         }
       } else {
         setSendStatus("error");
-        setStatusMessage(result.error || "Failed to dispatch email. Please check your network.");
+        const detailedError =
+          result.details?.message ||
+          result.error ||
+          "Failed to dispatch email. Please verify your recipient or sender settings.";
+        setStatusMessage(detailedError);
       }
     } catch (networkError) {
       console.warn("Email API error:", networkError);

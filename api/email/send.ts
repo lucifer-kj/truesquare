@@ -57,15 +57,24 @@ export default async function handleEmailDocument(
     const smtpHost = process.env.SMTP_HOST;
 
     if (resendApiKey) {
-      // Direct call to Resend REST API
+      // Determine sender address:
+      // If a custom verified SENDER_EMAIL is in env, use it; otherwise use Resend default sandbox sender
+      const configuredSender = process.env.SENDER_EMAIL || "TrueSquare Invoicing <onboarding@resend.dev>";
+      const fromAddress = senderName && process.env.SENDER_EMAIL
+        ? `${senderName} <${process.env.SENDER_EMAIL}>`
+        : configuredSender;
+
       const resendPayload: Record<string, unknown> = {
-        from: senderEmail
-          ? `${senderName || "TrueSquare Contractor"} <${senderEmail}>`
-          : "TrueSquare Invoicing <onboarding@resend.dev>",
+        from: fromAddress,
         to: recipientName ? [`${recipientName} <${recipientEmail}>`] : [recipientEmail],
         subject: subject,
         text: messageBody,
       };
+
+      // Set reply_to so client can reply directly to contractor's email
+      if (senderEmail && senderEmail.includes("@")) {
+        resendPayload.reply_to = senderEmail;
+      }
 
       if (pdfBase64 && pdfFileName) {
         resendPayload.attachments = [
