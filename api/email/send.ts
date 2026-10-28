@@ -17,8 +17,8 @@ interface EmailDocumentRequestBody {
 }
 
 /**
- * Serverless API Endpoint to dispatch invoices/estimates via email.
- * Configured to work seamlessly with SMTP/Resend/SendGrid credentials.
+ * Serverless API Endpoint to dispatch invoices/estimates via webhook (e.g. n8n).
+ * Forwards senderEmail, recipientEmail, subject, body, and data (invoice as base64) with authorization.
  */
 export default async function handleEmailDocument(
   request: VercelRequest,
@@ -51,84 +51,68 @@ export default async function handleEmailDocument(
       pdfFileName,
     } = requestBody;
 
-    // Check if an email service provider API key is configured
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const sendgridApiKey = process.env.SENDGRID_API_KEY;
-    const smtpHost = process.env.SMTP_HOST;
+    // Webhook destination and Bearer token from environment (or default n8n endpoint)
+    const emailWebhookUrl =
+      process.env.EMAIL_WEBHOOK_URL ||
+      "https://n8n.alphabusinessdesigns.co.uk/webhook/477405ad-5d41-44f4-bec5-8e34c5451f84";
+    const emailWebhookToken =
+      process.env.EMAIL_WEBHOOK_AUTH_TOKEN ||
+      "jksfbl24b32jkb4bdfjgQEjpJ46r3El0c71b2";
 
-    if (resendApiKey) {
-      // Determine sender address:
-      // If a custom verified SENDER_EMAIL is in env, use it; otherwise use Resend default sandbox sender
-      const configuredSender = process.env.SENDER_EMAIL || "TrueSquare Invoicing <onboarding@resend.dev>";
-      const fromAddress = senderName && process.env.SENDER_EMAIL
-        ? `${senderName} <${process.env.SENDER_EMAIL}>`
-        : configuredSender;
+    // Format payload as expected by n8n workflow:
+    // senderEmail, recipientEmail, subject, body, and data (invoice as base64)
+    const webhookPayload = {
+      senderEmail: senderEmail || "billing@truesquare.app",
+      senderName: senderName || "TrueSquare Invoicing Studio",
+      recipientEmail: recipientEmail.trim(),
+      recipientName: recipientName || recipientEmail.split("@")[0] || "Client",
+      subject: subject,
+      body: messageBody,
+      data: pdfBase64 || "",
+      filename: pdfFileName || `${documentNumber || "INV-0001"}.pdf`,
+      documentNumber: documentNumber || "INV-0001",
+      documentType: documentType || "invoice",
+      dispatchedAt: new Date().toISOString(),
+    };
 
-      const resendPayload: Record<string, unknown> = {
-        from: fromAddress,
-        to: recipientName ? [`${recipientName} <${recipientEmail}>`] : [recipientEmail],
-        subject: subject,
-        text: messageBody,
-      };
+    const webhookHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${emailWebhookToken}`,
+    };
 
-      // Set reply_to so client can reply directly to contractor's email
-      if (senderEmail && senderEmail.includes("@")) {
-        resendPayload.reply_to = senderEmail;
-      }
+    const webhookApiResponse = await fetch(emailWebhookUrl, {
+      method: "POST",
+      headers: webhookHeaders,
+      body: JSON.stringify(webhookPayload),
+    });
 
-      if (pdfBase64 && pdfFileName) {
-        resendPayload.attachments = [
-          {
-            filename: pdfFileName,
-            content: pdfBase64,
-          },
-        ];
-      }
+    const responseStatus = webhookApiResponse.status;
+    const responseText = await webhookApiResponse.text();
 
-      const resendApiResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(resendPayload),
-      });
-
-      const resendResult = await resendApiResponse.json();
-
-      if (!resendApiResponse.ok) {
-        return response.status(resendApiResponse.status).json({
-          error: "Failed to dispatch email via Resend.",
-          details: resendResult,
-        });
-      }
-
-      return response.status(200).json({
-        success: true,
-        provider: "resend",
-        data: resendResult,
+    if (!webhookApiResponse.ok) {
+      return response.status(responseStatus).json({
+        error: "Failed to dispatch email request to n8n webhook.",
+        status: responseStatus,
+        details: responseText,
       });
     }
 
-    // If no provider API key is configured yet in environment variables
-    // Return a structured status informing the client so the contractor can configure email auth
+    let parsedResponse: unknown = null;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch {
+      parsedResponse = { raw: responseText };
+    }
+
     return response.status(200).json({
       success: true,
-      provider: "pending_configuration",
-      message:
-        "Email dispatch endpoint is ready. Configure RESEND_API_KEY, SENDGRID_API_KEY, or SMTP credentials in your environment variables to enable live cloud delivery.",
-      dispatchedPayload: {
-        to: recipientEmail,
-        subject,
-        documentNumber,
-        documentType,
-        hasAttachment: Boolean(pdfBase64),
-      },
+      provider: "n8n_webhook",
+      data: parsedResponse,
     });
   } catch (error) {
-    console.error("Email dispatch failed:", error);
+    console.error("Email webhook dispatch failed:", error);
     return response.status(500).json({
-      error: "Internal server error dispatching email document.",
+      error: "Internal server error dispatching email to webhook.",
     });
   }
 }
