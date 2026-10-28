@@ -11,6 +11,7 @@ import {
   FileText,
   Sparkles,
   Download,
+  Mail,
   LogOut,
   Loader2,
 } from "lucide-react";
@@ -37,6 +38,7 @@ export interface CommandBarProps {
   userProfile?: { name: string; email: string; isGuest?: boolean } | null;
   onSignOut?: () => void;
   isGeneratingPdf?: boolean;
+  onOpenSendEmail?: () => void;
 }
 
 export const CommandBar: FC<CommandBarProps> = ({
@@ -56,6 +58,7 @@ export const CommandBar: FC<CommandBarProps> = ({
   userProfile,
   onSignOut,
   isGeneratingPdf = false,
+  onOpenSendEmail,
 }) => {
   const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState<boolean>(false);
   const actionsDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -353,6 +356,21 @@ export const CommandBar: FC<CommandBarProps> = ({
               </Tooltip>
             )}
           </div>
+        )}
+
+        {/* Send Email Button (Shown in Editor) */}
+        {activeView === "editor" && onOpenSendEmail && (
+          <Tooltip content="Send document to client via email" shortcut="Alt+E" position="bottom">
+            <button
+              type="button"
+              onClick={onOpenSendEmail}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold bg-muted hover:bg-muted/80 text-foreground border border-border transition-all shadow-2xs active:scale-95"
+              aria-label="Send Document via Email"
+            >
+              <Mail className="w-3.5 h-3.5 text-primary" />
+              <span>Send Email</span>
+            </button>
+          </Tooltip>
         )}
 
         {/* Primary Download PDF Button (Shown in Editor) */}

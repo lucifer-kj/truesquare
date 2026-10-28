@@ -6,10 +6,13 @@ import {
   Text,
   View,
   StyleSheet,
+  Svg,
+  Path,
 } from "@react-pdf/renderer";
 import type { InvoiceEstimateDocument } from "@/domain/types";
 import { formatCents } from "@/domain/money";
 import { calculateDocumentTotals } from "@/domain/calculations";
+import { generateRealisticSignaturePaths } from "@/domain/signature-service";
 
 // PDF Vector Document Stylesheet
 const pdfStyles = StyleSheet.create({
@@ -210,14 +213,21 @@ const pdfStyles = StyleSheet.create({
     lineHeight: 1.3,
   },
   signatureLine: {
-    width: 140,
+    width: 150,
     borderTopWidth: 1,
     borderTopColor: "#94a3b8",
-    paddingTop: 4,
+    paddingTop: 3,
     alignItems: "center",
   },
+  signatureSignatory: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#0f172a",
+    marginBottom: 1,
+    textAlign: "center",
+  },
   signatureText: {
-    fontSize: 7.5,
+    fontSize: 7,
     color: "#64748b",
     textAlign: "center",
   },
@@ -415,14 +425,45 @@ export const InvoicePdfDocument: React.FC<InvoicePdfDocumentProps> = ({
             </Text>
           </View>
 
-          <View style={pdfStyles.signatureLine}>
-            <Text style={pdfStyles.signatureText}>Authorized Contractor Signature</Text>
+          <View style={{ alignItems: "center" }}>
+            <Svg width={140} height={32} viewBox="0 0 144 32">
+              <Path
+                d={generateRealisticSignaturePaths(invoiceDocument.business.businessName).primaryFlourishPath}
+                stroke="#1e3a8a"
+                strokeWidth={1.5}
+                fill="none"
+              />
+              <Path
+                d={generateRealisticSignaturePaths(invoiceDocument.business.businessName).penUnderlinePath}
+                stroke="#1e3a8a"
+                strokeWidth={1.1}
+                fill="none"
+              />
+            </Svg>
+            <View style={pdfStyles.signatureLine}>
+              <Text style={pdfStyles.signatureSignatory}>
+                {invoiceDocument.business.businessName || "Authorized Representative"}
+              </Text>
+              <Text style={pdfStyles.signatureText}>Authorized Contractor Signature</Text>
+            </View>
           </View>
         </View>
       </Page>
     </Document>
   );
 };
+
+/**
+ * Generates an authentic binary PDF Blob from a domain invoice/estimate document.
+ */
+export async function generateInvoicePdfBlob(
+  invoiceDocument: InvoiceEstimateDocument
+): Promise<Blob> {
+  const documentElement = React.createElement(InvoicePdfDocument, {
+    invoiceDocument,
+  }) as unknown as Parameters<typeof pdf>[0];
+  return await pdf(documentElement).toBlob();
+}
 
 /**
  * Compiles and immediately downloads an authentic vector PDF binary directly to the browser.
@@ -440,10 +481,7 @@ export async function downloadInvoicePdfDirectly(
   const cleanDocumentFileName = `${sanitizedDocNumber}_${sanitizedClientName}`;
 
   // 1. Generate real vector PDF binary blob
-  const documentElement = React.createElement(InvoicePdfDocument, {
-    invoiceDocument,
-  }) as unknown as Parameters<typeof pdf>[0];
-  const pdfBlob = await pdf(documentElement).toBlob();
+  const pdfBlob = await generateInvoicePdfBlob(invoiceDocument);
 
   // 2. Programmatically dispatch automatic browser file download
   const downloadUrl = URL.createObjectURL(pdfBlob);

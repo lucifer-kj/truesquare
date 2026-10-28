@@ -7,6 +7,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Download,
+  Mail,
   Search,
   Lock,
   MoreHorizontal,
@@ -47,6 +48,7 @@ export interface MobileFieldToolProps {
   onUpdateNotesAndTerms: (notes: string, paymentTerms: string) => void;
   onApplyProposedLineItems: (proposedItems: SupplyLineItem[], targetBudgetCents: number) => void;
   onTriggerExportPdf: () => void;
+  onOpenSendEmail?: () => void;
   onStartNewBlankDocument?: () => void;
   onCreateNewDocument?: (documentType: DocumentClassificationType) => void;
   onOpenCommandPalette?: () => void;
@@ -70,6 +72,7 @@ export const MobileFieldTool: FC<MobileFieldToolProps> = ({
   onUpdateNotesAndTerms,
   onApplyProposedLineItems,
   onTriggerExportPdf,
+  onOpenSendEmail,
   onStartNewBlankDocument,
   onCreateNewDocument,
   onOpenCommandPalette,
@@ -456,19 +459,31 @@ export const MobileFieldTool: FC<MobileFieldToolProps> = ({
             <button
               type="button"
               onClick={() => navigateToStep(1)}
-              className="flex items-center space-x-1.5 px-3 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl text-xs font-semibold active:scale-95 transition-colors"
+              className="flex items-center space-x-1 px-2.5 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl text-xs font-semibold active:scale-95 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Edit Supplies</span>
+              <span>Edit</span>
             </button>
+
+            {onOpenSendEmail && (
+              <button
+                type="button"
+                onClick={onOpenSendEmail}
+                className="flex items-center justify-center space-x-1.5 py-2 px-3 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl text-xs font-semibold active:scale-[0.98] transition-all"
+                title="Send via Email"
+              >
+                <Mail className="w-3.5 h-3.5 text-primary" />
+                <span>Email</span>
+              </button>
+            )}
 
             <button
               type="button"
               onClick={onTriggerExportPdf}
-              className="flex-1 flex items-center justify-center space-x-2 py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold active:scale-[0.98] transition-all shadow-md"
+              className="flex-1 flex items-center justify-center space-x-1.5 py-2 px-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold active:scale-[0.98] transition-all shadow-md"
             >
-              <Download className="w-4 h-4" />
-              <span>Download 1-Page PDF</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>Download PDF</span>
             </button>
           </div>
         )}

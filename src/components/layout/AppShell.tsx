@@ -26,6 +26,7 @@ import {
 } from "@/services/auth-service";
 import { uploadEncryptedDisasterBackup } from "@/services/cloud-backup-service";
 import { downloadInvoicePdfDirectly } from "@/services/pdf-download-service";
+import { SendEmailModal } from "@/components/invoice/SendEmailModal";
 import { useAccessibleMotion } from "@/design-system";
 import type { ClientDirectoryRecord } from "@/domain/types";
 
@@ -80,6 +81,7 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
 
   // Global direct PDF download shortcut: Alt+P (and programmatic trigger)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
+  const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState<boolean>(false);
 
   const handleTriggerPrint = async () => {
     if (isGeneratingPdf) return;
@@ -191,6 +193,7 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
           onCreateNewDocument={handleCreateNewDocument}
           onUpdateDocumentType={updateDocumentType}
           onTriggerExportPdf={handleTriggerPrint}
+          onOpenSendEmail={() => setIsSendEmailModalOpen(true)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           userProfile={userProfile}
           onSignOut={onSignOut}
@@ -320,6 +323,7 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
                 onUpdateNotesAndTerms={updateNotesAndTerms}
                 onApplyProposedLineItems={applyProposedLineItems}
                 onTriggerExportPdf={handleTriggerPrint}
+                onOpenSendEmail={() => setIsSendEmailModalOpen(true)}
                 onStartNewBlankDocument={() => handleCreateNewDocument("estimate")}
                 onCreateNewDocument={handleCreateNewDocument}
                 onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
@@ -450,6 +454,13 @@ export const AppShell: FC<AppShellProps> = ({ userProfile, onSignOut }) => {
         onUpdateClientRecord={updateClientRecord}
         onStartNewBlankDocument={() => handleCreateNewDocument("estimate")}
         onTriggerExportPdf={handleTriggerPrint}
+      />
+
+      {/* Send Email Modal */}
+      <SendEmailModal
+        isOpen={isSendEmailModalOpen}
+        onClose={() => setIsSendEmailModalOpen(false)}
+        invoiceDocument={activeDocument}
       />
 
       {/* TrueSquare Initial Cold Boot Splash Screen */}
