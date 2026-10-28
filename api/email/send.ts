@@ -18,7 +18,7 @@ interface EmailDocumentRequestBody {
 
 /**
  * Serverless API Endpoint to dispatch invoices/estimates via webhook (e.g. n8n).
- * Forwards senderEmail, recipientEmail, subject, body, and data (invoice as base64) with authorization.
+ * Dispatches true binary multipart/form-data where `data` is sent as a native binary PDF file.
  */
 export default async function handleEmailDocument(
   request: VercelRequest,
@@ -59,31 +59,36 @@ export default async function handleEmailDocument(
       process.env.EMAIL_WEBHOOK_AUTH_TOKEN ||
       "jksfbl24b32jkb4bdfjgQEjpJ46r3El0c71b2";
 
-    // Format payload as expected by n8n workflow:
-    // senderEmail, recipientEmail, subject, body, and data (invoice as base64)
-    const webhookPayload = {
-      senderEmail: senderEmail || "billing@truesquare.app",
-      senderName: senderName || "TrueSquare Invoicing Studio",
-      recipientEmail: recipientEmail.trim(),
-      recipientName: recipientName || recipientEmail.split("@")[0] || "Client",
-      subject: subject,
-      body: messageBody,
-      data: pdfBase64 || "",
-      filename: pdfFileName || `${documentNumber || "INV-0001"}.pdf`,
-      documentNumber: documentNumber || "INV-0001",
-      documentType: documentType || "invoice",
-      dispatchedAt: new Date().toISOString(),
-    };
+    const cleanPdfFileName = pdfFileName || `${documentNumber || "INV-0001"}.pdf`;
+
+    // Construct native multipart/form-data so `data` is sent as pure binary PDF file
+    const formData = new FormData();
+    formData.append("senderEmail", senderEmail || "billing@truesquare.app");
+    formData.append("senderName", senderName || "TrueSquare Invoicing Studio");
+    formData.append("recipientEmail", recipientEmail.trim());
+    formData.append("recipientName", recipientName || recipientEmail.split("@")[0] || "Client");
+    formData.append("subject", subject);
+    formData.append("body", messageBody);
+    formData.append("filename", cleanPdfFileName);
+    formData.append("documentNumber", documentNumber || "INV-0001");
+    formData.append("documentType", documentType || "invoice");
+    formData.append("dispatchedAt", new Date().toISOString());
+
+    if (pdfBase64) {
+      // Decode Base64 to binary buffer and append as a true binary File Blob under the field `data`
+      const binaryBuffer = Buffer.from(pdfBase64, "base64");
+      const pdfBinaryBlob = new Blob([binaryBuffer], { type: "application/pdf" });
+      formData.append("data", pdfBinaryBlob, cleanPdfFileName);
+    }
 
     const webhookHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
       Authorization: `bearer ${emailWebhookToken}`,
     };
 
     const webhookApiResponse = await fetch(emailWebhookUrl, {
       method: "POST",
       headers: webhookHeaders,
-      body: JSON.stringify(webhookPayload),
+      body: formData,
     });
 
     const responseStatus = webhookApiResponse.status;
@@ -107,6 +112,7 @@ export default async function handleEmailDocument(
     return response.status(200).json({
       success: true,
       provider: "n8n_webhook",
+      binaryDataSent: Boolean(pdfBase64),
       data: parsedResponse,
     });
   } catch (error) {
